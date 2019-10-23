@@ -1,2 +1,2 @@
-web: python app.py
-worker: celery worker -A answer_policy_question.celery -O fair --loglevel=INFO --concurrency=2 --max-tasks-per-child=1
+web: newrelic-admin run-program python clear_redis.py && newrelic-admin run-program python app.py
+worker: newrelic-admin run-program celery worker -A answer_policy_question.celery -O fair --loglevel=INFO --concurrency=2 --max-tasks-per-child=1
