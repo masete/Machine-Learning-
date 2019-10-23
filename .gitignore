@@ -4,3 +4,4 @@ venv
 .DS_Store
 .vscode
 dump.rdb
+/.idea/
