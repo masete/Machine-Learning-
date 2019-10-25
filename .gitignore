@@ -5,3 +5,4 @@ venv
 .vscode
 dump.rdb
 /.idea/
+/myenv
