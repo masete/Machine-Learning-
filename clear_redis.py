@@ -7,4 +7,4 @@ from config import CeleryConfig
 
 redis_url = CeleryConfig.broker_url
 r = redis.from_url(redis_url)
-# r.flushdb()
+r.flushdb()
