@@ -5,6 +5,8 @@
 
 {% block content %}
 
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+
 <!-- Load HighCharts.js -->
 <script src="https://code.highcharts.com/highcharts.js"></script>
 
@@ -166,6 +168,7 @@
                 console.log(data)
                 status_url = request.getResponseHeader('Location');
                 // check progress of task
+                console.log(request)
                 update_progress(status_url) 
               }
             });
