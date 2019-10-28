@@ -9,6 +9,8 @@ class Config:
 
 
 class ProdConfig(Config):
+    BOOTSTRAP_CDN_FORCE_SSL = True
+    PREFERRED_URL_SCHEME = 'https'
     DEBUG = False
 
 

@@ -1,5 +1,6 @@
 import os
 import json
+
 from flask import Flask, render_template, request, jsonify, url_for
 from flask_bootstrap import Bootstrap
 from gevent.pywsgi import WSGIServer
@@ -17,7 +18,6 @@ from answer_policy_question import process_question, get_DOAJ_articles,\
 app = Flask(__name__)
 
 app.config.from_object(ProdConfig)
-
 Bootstrap(app)
 
 
@@ -46,7 +46,7 @@ def backgroundtask():
     return jsonify(
         {}), 202, {
         'Location': url_for(
-            'taskstatus', task_id=task.id)}
+            'taskstatus', task_id=task.id, _external=True, _scheme='https')}
 
 
 @app.route('/status/<task_id>', methods=['GET'])
