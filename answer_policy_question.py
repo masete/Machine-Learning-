@@ -8,19 +8,19 @@ Copyright (c) 2019 Pollicy.
 
 import en_core_web_sm
 import textacy.extract
-import spacy
+# import spacy
 from celery.backends.redis import RedisBackend
 from celery import Celery, group, subtask, chord, states
 import celery
 from config import CeleryConfig
 from nltk.corpus import stopwords, wordnet
 from nltk.tokenize import sent_tokenize, word_tokenize
-import os
-import re
+# import os
+# import re
 import requests
 import json
 import string
-import itertools
+# import itertools
 
 import nltk
 nltk.download('stopwords')
@@ -59,36 +59,41 @@ celery = patch_celery().Celery(__name__)
 celery.config_from_object(CeleryConfig)
 
 
-def one_sentence_per_doc(doc):
-    """Enforce one sentence per doc to help with dependency parsing."""
-    doc[0].sent_start = True
-    for i in range(1, len(doc)):
-        doc[i].sent_start = False
-    return doc
+class LoadSpayModelSetUpPipeline:
+
+    @staticmethod
+    def one_sentence_per_doc(self, doc):
+        """Enforce one sentence per doc to help with dependency parsing."""
+        doc[0].sent_start = True
+        for i in range(1, len(doc)):
+            doc[i].sent_start = False
+        return doc
 
 
-# load spaCy model and set up pipeline
-nlp = en_core_web_sm.load()
-nlp.add_pipe(one_sentence_per_doc, before='parser')
+    # load spaCy model and set up pipeline
+    nlp = en_core_web_sm.load()
+    nlp.add_pipe(one_sentence_per_doc, before='parser')
 
-# load the opinion lexicon to be used for sentiment analysis
-neg_file = open(
-    "opinion-lexicon-English/neg_words.txt",
-    "r",
-    encoding="ISO-8859-1")
-pos_file = open(
-    "opinion-lexicon-English/pos_words.txt",
-    "r",
-    encoding="ISO-8859-1")
-neg_words = [line.strip() for line in neg_file.readlines()]
-pos_words = [line.strip() for line in pos_file.readlines()]
-opinion_words = neg_words + pos_words
+    # load the opinion lexicon to be used for sentiment analysis
+    neg_file = open(
+        "opinion-lexicon-English/neg_words.txt",
+        "r",
+        encoding="ISO-8859-1")
+    pos_file = open(
+        "opinion-lexicon-English/pos_words.txt",
+        "r",
+        encoding="ISO-8859-1")
+    neg_words = [line.strip() for line in neg_file.readlines()]
+    pos_words = [line.strip() for line in pos_file.readlines()]
+    opinion_words = neg_words + pos_words
 
 
-# base urls for the APIs used to fetch open access research articles
-base_url_DOAJ = "https://doaj.org/api/v1/search/articles/"
-base_url_CORE = "https://core.ac.uk:443/api-v2/articles/search/"
-base_url_Crossref = "https://api.crossref.org/works?query="
+class CallJournalUrls:
+    # base urls for the APIs used to fetch open access research articles
+    base_url_DOAJ = "https://doaj.org/api/v1/search/articles/"
+    base_url_CORE = "https://core.ac.uk:443/api-v2/articles/search/"
+    base_url_Crossref = "https://api.crossref.org/works?query="
+
 
 # target words that we expect in an abstract of an article stating results
 # of a study
@@ -149,12 +154,12 @@ def process_question(question):
 
     # get the lemmas for the keywords (we are not using these yet but could do
     # so later)
-    keywords_lemmas = [w.lemma_ for w in nlp(" ".join(keywords))]
+    keywords_lemmas = [w.lemma_ for w in LoadSpayModelSetUpPipeline.nlp(" ".join(keywords))]
 
     return keywords
 
 
-def process_DOAJ_article(article):
+def process_doaj_article(article):
     """Process an article returned from DOAJ."""
     if "abstract" in article["bibjson"]:
         abstract = article["bibjson"]["abstract"]
@@ -168,17 +173,17 @@ def process_DOAJ_article(article):
 
 
 @celery.task(name='get_DOAJ_articles')
-def get_DOAJ_articles(keywords):
+def get_doaj_articles(keywords):
     """Retrieve articles from DOAJ in json format."""
     # get all the available results for the DOAJ API (1000 is the limit)
     query_DOAJ = "%20".join(keywords)  # DOAJ uses operator AND by default
-    url_DOAJ = base_url_DOAJ + query_DOAJ + "?page=1&pageSize=1000"
+    url_DOAJ = CallJournalUrls.base_url_DOAJ + query_DOAJ + "?page=1&pageSize=1000"
 
     DOAJ_response = requests.get(url_DOAJ)
     DOAJ_response = json.loads(DOAJ_response.text)
     DOAJ_results = DOAJ_response["results"]
 
-    DOAJ_articles = [process_DOAJ_article(article) for article in DOAJ_results]
+    DOAJ_articles = [process_doaj_article(article) for article in DOAJ_results]
 
     return DOAJ_articles
 
@@ -202,7 +207,7 @@ def get_Crossref_articles(keywords):
     # get all the available results for the Crossref API (1000 is the limit)
     # Crossref does not allow the use of operator "AND"
     query_Crossref = "+".join(keywords)
-    url_Crossref = base_url_Crossref + \
+    url_Crossref = CallJournalUrls.base_url_Crossref + \
         query_Crossref + "&sort=relevance" + "&rows=1000"
 
     Crossref_response = requests.get(url_Crossref)
@@ -230,7 +235,7 @@ def process_CORE_article(item):
 
 def call_CORE_api(page_CORE, query_CORE, api_key_CORE):
     """ Perform a single API call to CORE."""
-    url_CORE = base_url_CORE + query_CORE + "?page=" + str(page_CORE) + "&pageSize=" + str(
+    url_CORE = CallJournalUrls.base_url_CORE + query_CORE + "?page=" + str(page_CORE) + "&pageSize=" + str(
         100) + "&metadata=true&fulltext=false&citations=false&similar=false&duplicate=false&urls=false&faithfulMetadata=false&apiKey=" + api_key_CORE
 
     CORE_response = requests.get(url_CORE)
