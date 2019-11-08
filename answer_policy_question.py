@@ -656,50 +656,29 @@ def get_article_positions(relevant_articles):
     return claim_positions
 
 
-@celery.task(name='answer_question')
-def answer_question(articles, keywords=None):
-    """Perform claim detection on abstracts."""
-    # articles is a list of lists that has to be flattened
-    combined_articles = [
-        item for sublist in articles for item in sublist if item is not None]
+class Answer:
 
-    response = {}
-    response['All_articles'] = len(combined_articles)
 
-    if not combined_articles:
-        # in case there are no articles returned by any of the APIs
-        claim_positions = {}
+    @celery.task(name='answer_question')
+    def answer_question(self, articles, keywords=None):
+        """Perform claim detection on abstracts."""
+        # articles is a list of lists that has to be flattened
+        combined_articles = [
+            item for sublist in articles for item in sublist if item is not None]
 
-        # generate recommendation to give to user
-        detailed_recommendation = (
-            "Unfortunately, we were not able to get any open access research "
-            "articles related to your query. We are, therefore, unable to "
-            "return a recommendation."
-        )
+        response = {}
+        response['All_articles'] = len(combined_articles)
 
-        claim_positions['Yes'] = 'N/A'
-        claim_positions['No'] = 'N/A'
-        claim_positions['No_position'] = 'N/A'
-        claim_positions['Yes_percent'] = 'N/A'
-        claim_positions['No_percent'] = 'N/A'
-        claim_positions['No_position_percent'] = 'N/A'
-        claim_positions['detailed_recommendation'] = detailed_recommendation
-
-        response['Claim_positions'] = claim_positions
-
-    else:
-        # filter out the irrelevant articles
-        relevant_articles = filter_articles(combined_articles, keywords)
-        response['Relevant_articles'] = len(relevant_articles)
-
-        if not relevant_articles:
+        if not combined_articles:
+            # in case there are no articles returned by any of the APIs
             claim_positions = {}
 
             # generate recommendation to give to user
             detailed_recommendation = (
-                "Unfortunately, none of the open access research articles we "
-                "surveyed were relevant to your query. We are, therefore, unable "
-                "to return a recommendation.")
+                "Unfortunately, we were not able to get any open access research "
+                "articles related to your query. We are, therefore, unable to "
+                "return a recommendation."
+            )
 
             claim_positions['Yes'] = 'N/A'
             claim_positions['No'] = 'N/A'
@@ -710,24 +689,48 @@ def answer_question(articles, keywords=None):
             claim_positions['detailed_recommendation'] = detailed_recommendation
 
             response['Claim_positions'] = claim_positions
-            # perform claim detection
-            relevant_articles_positions = assign_position(
-                relevant_articles, keywords)
-            # get summary of claim positions
-            claim_positions = get_article_positions(
-                relevant_articles_positions)
-            response['Claim_positions'] = claim_positions
 
         else:
-            # perform claim detection
-            relevant_articles_positions = assign_position(
-                relevant_articles, keywords)
-            # get summary of claim positions
-            claim_positions = get_article_positions(
-                relevant_articles_positions)
-            response['Claim_positions'] = claim_positions
+            # filter out the irrelevant articles
+            relevant_articles = filter_articles(combined_articles, keywords)
+            response['Relevant_articles'] = len(relevant_articles)
 
-    return response
+            if not relevant_articles:
+                claim_positions = {}
+
+                # generate recommendation to give to user
+                detailed_recommendation = (
+                    "Unfortunately, none of the open access research articles we "
+                    "surveyed were relevant to your query. We are, therefore, unable "
+                    "to return a recommendation.")
+
+                claim_positions['Yes'] = 'N/A'
+                claim_positions['No'] = 'N/A'
+                claim_positions['No_position'] = 'N/A'
+                claim_positions['Yes_percent'] = 'N/A'
+                claim_positions['No_percent'] = 'N/A'
+                claim_positions['No_position_percent'] = 'N/A'
+                claim_positions['detailed_recommendation'] = detailed_recommendation
+
+                response['Claim_positions'] = claim_positions
+                # perform claim detection
+                relevant_articles_positions = assign_position(
+                    relevant_articles, keywords)
+                # get summary of claim positions
+                claim_positions = get_article_positions(
+                    relevant_articles_positions)
+                response['Claim_positions'] = claim_positions
+
+            else:
+                # perform claim detection
+                relevant_articles_positions = assign_position(
+                    relevant_articles, keywords)
+                # get summary of claim positions
+                claim_positions = get_article_positions(
+                    relevant_articles_positions)
+                response['Claim_positions'] = claim_positions
+
+        return response
 
 
 if __name__ == '__main__':
@@ -740,7 +743,7 @@ if __name__ == '__main__':
 
     # use a celery chord here and add keywords as an extra argument in
     # addition to the header
-    callback = answer_question.subtask(kwargs={'keywords': keywords})
+    callback = Answer.answer_question.subtask(kwargs={'keywords': keywords})
     header = [
         get_DOAJ_articles.subtask(args=(keywords, )),
         get_Crossref_articles.subtask(args=(keywords, )),
