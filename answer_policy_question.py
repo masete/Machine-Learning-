@@ -62,7 +62,7 @@ celery.config_from_object(CeleryConfig)
 class LoadSpayModelSetUpPipeline:
 
     # @staticmethod
-    def one_sentence_per_doc(self, doc=None):
+    def one_sentence_per_doc(self, doc):
         """Enforce one sentence per doc to help with dependency parsing."""
         doc[0].sent_start = True
         for i in range(1, len(doc)):
