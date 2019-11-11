@@ -1,5 +1,4 @@
 import os
-import json
 
 from flask import Flask, render_template, request, jsonify, url_for
 from flask_bootstrap import Bootstrap
@@ -8,9 +7,9 @@ from answer_policy_question import CallJournalUrls, Answer
 
 import wikipedia
 
-from celery import subtask, chord
+from celery import chord
 
-from config import ProdConfig
+from dar.config.config import ProdConfig
 
 # import backgroud tasks here
 # from answer_policy_question import process_question, get_DOAJ_articles,\

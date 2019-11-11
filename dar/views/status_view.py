@@ -1,7 +1,8 @@
 from flask import jsonify
+from flask.views import MethodView
 
 
-class Status:
+class StatusController(MethodView):
 
     def task(self, task_id):
         """Check on the status of the background tasks."""

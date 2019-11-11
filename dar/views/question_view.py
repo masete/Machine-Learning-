@@ -1,10 +1,11 @@
-
-
 from flask import request, jsonify, url_for
+from flask.views import MethodView
 
 
-class QuestionAnswer(MethodView):
-    def backgroundtask(self):
+class QuestionAnswerController(MethodView):
+    def post(self):
+        cu = CallJournalUrls()
+
         """Start the background tasks."""
         question = request.json['question']
         keywords = cu.process_question(question)

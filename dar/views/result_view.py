@@ -1,9 +1,10 @@
 from flask import request, render_template
+from flask.views import MethodView
 import wikipedia
 
 
-class ReturnAnswer:
-    def result(self):
+class ResultController(MethodView):
+    def resultanswer(self):
         """Return an answer to the user."""
         question = request.json['replies']['question']
         answer = request.json['results']

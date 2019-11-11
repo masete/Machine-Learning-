@@ -10,11 +10,11 @@ import en_core_web_sm
 import textacy.extract
 # import spacy
 from celery.backends.redis import RedisBackend
-from celery import Celery, group, subtask, chord, states
+from celery import chord, states
 import celery
-from config import CeleryConfig
-from nltk.corpus import stopwords, wordnet
-from nltk.tokenize import sent_tokenize, word_tokenize
+from dar.config.config import CeleryConfig
+from nltk.corpus import stopwords
+from nltk.tokenize import sent_tokenize
 # import os
 # import re
 import requests
