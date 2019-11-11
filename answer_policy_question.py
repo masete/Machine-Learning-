@@ -61,14 +61,13 @@ celery.config_from_object(CeleryConfig)
 
 class LoadSpayModelSetUpPipeline:
 
-    @staticmethod
+    # @staticmethod
     def one_sentence_per_doc(self, doc):
         """Enforce one sentence per doc to help with dependency parsing."""
         doc[0].sent_start = True
         for i in range(1, len(doc)):
             doc[i].sent_start = False
         return doc
-
 
     # load spaCy model and set up pipeline
     nlp = en_core_web_sm.load()
@@ -143,10 +142,10 @@ class CallJournalUrls:
         'leads to',
         'lead to']
 
-    def process_question(self, question):
+    def process_question(self, question1):
         """Get user's question, clean it, and parse it for keywords."""
         # remove punctuation and get individual lower case words
-        question_words = question.translate(str.maketrans(
+        question_words = question1.translate(str.maketrans(
             '', '', string.punctuation)).lower().split()
         # get the keywords
         keywords = [w for w in question_words if w not in stop_words]

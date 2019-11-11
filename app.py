@@ -4,6 +4,7 @@ import json
 from flask import Flask, render_template, request, jsonify, url_for
 from flask_bootstrap import Bootstrap
 from gevent.pywsgi import WSGIServer
+from answer_policy_question import CallJournalUrls, Answer
 
 import wikipedia
 
@@ -12,9 +13,9 @@ from celery import subtask, chord
 from config import ProdConfig
 
 # import backgroud tasks here
-from answer_policy_question import process_question, get_DOAJ_articles,\
-    get_Crossref_articles, get_CORE_articles, answer_question
-
+# from answer_policy_question import process_question, get_DOAJ_articles,\
+#     get_Crossref_articles, get_CORE_articles, answer_question
+cu = CallJournalUrls()
 app = Flask(__name__)
 
 app.config.from_object(ProdConfig)
@@ -30,15 +31,15 @@ def index():
 @app.route('/backgroundtask', methods=['POST', 'GET'])
 def backgroundtask():
     """Start the background tasks."""
-    question = request.json['question']
-    keywords = process_question(question)
+    question = request.json['question1']
+    keywords = cu.process_question(question)
 
     # use a chord here
-    callback = answer_question.subtask(kwargs={'keywords': keywords})
+    callback = Answer.answer_question.subtask(kwargs={'keywords': keywords})
     header = [
-        get_DOAJ_articles.subtask(args=(keywords, )),
-        get_Crossref_articles.subtask(args=(keywords, )),
-        get_CORE_articles.subtask(args=(keywords, ))
+        CallJournalUrls.get_doaj_articles.subtask(args=(keywords, )),
+        CallJournalUrls.get_Crossref_articles.subtask(args=(keywords, )),
+        CallJournalUrls.get_CORE_articles.subtask(args=(keywords, ))
     ]
 
     task = chord(header)(callback)
@@ -53,7 +54,7 @@ def backgroundtask():
 def taskstatus(task_id):
     """Check on the status of the background tasks."""
     # remember answer_question is the callback so we use its task id
-    task = answer_question.AsyncResult(task_id)
+    task = Answer.answer_question.AsyncResult(task_id)
     response_data = {'task_status': task.status, 'task_id': task.id}
 
     if task.status == 'SUCCESS':
