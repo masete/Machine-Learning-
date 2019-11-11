@@ -31,7 +31,7 @@ def index():
 @app.route('/backgroundtask', methods=['POST', 'GET'])
 def backgroundtask():
     """Start the background tasks."""
-    question = request.json['question1']
+    question = request.json['question']
     keywords = cu.process_question(question)
 
     # use a chord here

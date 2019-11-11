@@ -62,7 +62,7 @@ celery.config_from_object(CeleryConfig)
 class LoadSpayModelSetUpPipeline:
 
     # @staticmethod
-    def one_sentence_per_doc(self, doc):
+    def one_sentence_per_doc(self, doc=None):
         """Enforce one sentence per doc to help with dependency parsing."""
         doc[0].sent_start = True
         for i in range(1, len(doc)):
@@ -142,19 +142,19 @@ class CallJournalUrls:
         'leads to',
         'lead to']
 
-    def process_question(self, question1):
+    def process_question(self, question):
         """Get user's question, clean it, and parse it for keywords."""
         # remove punctuation and get individual lower case words
-        question_words = question1.translate(str.maketrans(
+        question_words = question.translate(str.maketrans(
             '', '', string.punctuation)).lower().split()
         # get the keywords
-        keywords = [w for w in question_words if w not in stop_words]
+        keywords1 = [w for w in question_words if w not in stop_words]
 
         # get the lemmas for the keywords (we are not using these yet but could do
         # so later)
-        keywords_lemmas = [w.lemma_ for w in LoadSpayModelSetUpPipeline.nlp(" ".join(keywords))]
+        keywords_lemmas = [w.lemma_ for w in LoadSpayModelSetUpPipeline.nlp(" ".join(keywords1))]
 
-        return keywords
+        return keywords1
 
     def process_doaj_article(self, article):
         """Process an article returned from DOAJ."""
@@ -169,10 +169,10 @@ class CallJournalUrls:
             return {'abstract': abstract, 'pdf_url': url}
 
     @celery.task(name='get_DOAJ_articles')
-    def get_doaj_articles(self, keywords):
+    def get_doaj_articles(self, keywords1):
         """Retrieve articles from DOAJ in json format."""
         # get all the available results for the DOAJ API (1000 is the limit)
-        query_DOAJ = "%20".join(keywords)  # DOAJ uses operator AND by default
+        query_DOAJ = "%20".join(keywords1)  # DOAJ uses operator AND by default
         url_DOAJ = self.base_url_DOAJ + query_DOAJ + "?page=1&pageSize=1000"
 
         DOAJ_response = requests.get(url_DOAJ)
@@ -196,11 +196,11 @@ class CallJournalUrls:
             return {'abstract': abstract, 'pdf_url': url}
 
     @celery.task(name='get_Crossref_articles')
-    def get_Crossref_articles(self, keywords):
+    def get_Crossref_articles(self, keywords1):
         """Retrieve articles from Crossref in json format."""
         # get all the available results for the Crossref API (1000 is the limit)
         # Crossref does not allow the use of operator "AND"
-        query_Crossref = "+".join(keywords)
+        query_Crossref = "+".join(keywords1)
         url_Crossref = self.base_url_Crossref + \
             query_Crossref + "&sort=relevance" + "&rows=1000"
 
@@ -241,10 +241,10 @@ class CallJournalUrls:
             return []
 
     @celery.task(name='get_CORE_articles')
-    def get_CORE_articles(self, keywords):
+    def get_CORE_articles(self, keywords1):
         """Retrieve articles from CORE in json format."""
         # get all the available results for the CORE API (1000 is the limit)
-        query_CORE = "%20AND%20".join(keywords)
+        query_CORE = "%20AND%20".join(keywords1)
 
         # the CORE API key
         api_key_CORE = '4ZLsvriVI1pDOGu3qbgMB2dwx506KR8P'
@@ -294,7 +294,7 @@ class CallJournalUrls:
             if word not in abstract:
                 return True
 
-    def filter_articles(self, keywords, articles):
+    def filter_articles(self, keywords1, articles):
         """
         Filter out articles whose abstracts do not have all the keywords
         or make any claim.
@@ -303,7 +303,7 @@ class CallJournalUrls:
 
         articles = [
             article for article in articles if not self.missing_key_words(
-                article['abstract'], keywords)]
+                article['abstract'], keywords1)]
 
         for article in articles:
             abstract_sentences = sent_tokenize(
@@ -319,17 +319,17 @@ class CallJournalUrls:
         verb_objects.extend(verb_subjects)
         return verb_objects
 
-    def verb_relevance(self, verb, sso, keywords):
+    def verb_relevance(self, verb, sso, keywords1):
         """
         check if the verb and its object or subject are keywords
         sso refers to a list containing simple subjects and objects of a verb
         """
-        if verb.text in keywords or verb.lemma_ in keywords:
+        if verb.text in keywords1 or verb.lemma_ in keywords1:
             for word in sso:
-                if word.text in keywords or word.lemma_ in keywords:
+                if word.text in keywords1 or word.lemma_ in keywords1:
                     return True
 
-    def use_subjects_verbs_objects(self, sent_list, keywords):
+    def use_subjects_verbs_objects(self, sent_list, keywords1):
         """
         Use the subjects, verbs, and objects in a sentence to determine the claim
         position. We want to visit all sentences before returning a position.
@@ -351,13 +351,13 @@ class CallJournalUrls:
                 obj = triple[2]
 
                 # check if the verb and object are in the key words
-                if (verb.text in keywords or verb.lemma_ in keywords) \
-                        and (obj.text in keywords or obj.lemma_ in keywords):
+                if (verb.text in keywords1 or verb.lemma_ in keywords1) \
+                        and (obj.text in keywords1 or obj.lemma_ in keywords1):
                     position = True
 
                 # check if there is a 'not' before the verb
-                elif 'not' in verb.text and (obj.text in keywords
-                                             or obj.lemma_ in keywords):
+                elif 'not' in verb.text and (obj.text in keywords1
+                                             or obj.lemma_ in keywords1):
                     if position:
                         position = False
 
@@ -369,7 +369,7 @@ class CallJournalUrls:
             main_verbs = textacy.spacier.utils.get_main_verbs_of_sent(doc)
             for verb in main_verbs:
                 sso = self.simple_subjects_and_objects(verb)
-                if self.verb_relevance(verb, sso, keywords):
+                if self.verb_relevance(verb, sso, keywords1):
                     position = True
                     return position
 
@@ -417,7 +417,7 @@ class CallJournalUrls:
             all_tokens = list(set(all_tokens))
         return all_tokens
 
-    def use_noun_phrases(self, sent_list, keywords):
+    def use_noun_phrases(self, sent_list, keywords1):
         """
         Use the noun phrases in a sentence to determine its claim position.
         We want to visit all sentences before returning a position.
@@ -441,7 +441,7 @@ class CallJournalUrls:
             for np in noun_phrases:
                 words = np.text.split()
                 for word in words:
-                    if word in keywords:
+                    if word in keywords1:
                         relevant_noun_phrases.append(np)
                         # make sure that the noun phrase is appended only once even
                         # if it contains more than one key word otherwise big
@@ -456,7 +456,7 @@ class CallJournalUrls:
 
                 # check if any of the tokens are in the keywords
                 for token in tokens_btn_nps:
-                    if token.text in keywords:
+                    if token.text in keywords1:
                         position = True
 
                 # check for negation
@@ -482,7 +482,7 @@ class CallJournalUrls:
                     parent = np.head
                     # check if any of the sibling tokens are in the keywords
                     for token in parent.children:
-                        if token != np and (token.text in keywords):
+                        if token != np and (token.text in keywords1):
                             position = True
                             break
 
@@ -519,11 +519,11 @@ class CallJournalUrls:
 
         return position
 
-    def use_effect_words(self, sent_list, keywords):
+    def use_effect_words(self, sent_list, keywords1):
         """Use effect words such as positive/negative 'effect' or 'impact'."""
         position = None
         for sent in sent_list:
-            for word in keywords:
+            for word in keywords1:
                 if word in sent:
                     if 'positive' in sent and (
                             'effects' in sent or 'effect' in sent or 'impact' or 'impacts'):
@@ -532,22 +532,22 @@ class CallJournalUrls:
                         position = False
             return position
 
-    def determine_claim_position(self, sent_list, keywords):
+    def determine_claim_position(self, sent_list, keywords1):
         """Determine the claim position of sentences in a given abstract."""
         position = None
         if sent_list:
             # try subjects, verbs, and objects first
-            subj_verb_obj_result = self.use_subjects_verbs_objects(sent_list, keywords)
+            subj_verb_obj_result = self.use_subjects_verbs_objects(sent_list, keywords1)
             position = subj_verb_obj_result
 
             # if subjects, verbs, and objects do not work, try noun phrases
             if position is None:
-                noun_phrase_result = self.use_noun_phrases(sent_list, keywords)
+                noun_phrase_result = self.use_noun_phrases(sent_list, keywords1)
                 position = noun_phrase_result
 
             # if position is still None, try effect words
             if position is None:
-                effect_result = self.use_effect_words(sent_list, keywords)
+                effect_result = self.use_effect_words(sent_list, keywords1)
                 position = effect_result
 
             return position
@@ -557,7 +557,7 @@ class CallJournalUrls:
             # an abstract happens to have an empty list of claims
             return position
 
-    def assign_position(self, relevant_articles, keywords):
+    def assign_position(self, relevant_articles, keywords1):
         """Assign a given position to the abstract."""
         for item in relevant_articles:
 
@@ -567,22 +567,22 @@ class CallJournalUrls:
 
             # the claim position is the position determined by examining sentences
             # which make explicit claims
-            if self.determine_claim_position(claims, keywords):
+            if self.determine_claim_position(claims, keywords1):
                 item['claim_position'] = 'Yes'
-            elif self.determine_claim_position(claims, keywords) is False:
+            elif self.determine_claim_position(claims, keywords1) is False:
                 item['claim_position'] = 'No'
-            elif self.determine_claim_position(claims, keywords) == 'Not enough noun phrases':
+            elif self.determine_claim_position(claims, keywords1) == 'Not enough noun phrases':
                 item['claim_position'] = 'Not enough noun phrases'
             else:
                 item['claim_position'] = 'No position'
 
             # the total position includes all sentences in the abstract and is
             # therefore a superset of the claim position
-            if self.determine_claim_position(abstract_sentences, keywords):
+            if self.determine_claim_position(abstract_sentences, keywords1):
                 item['total_position'] = 'Yes'
-            elif self.determine_claim_position(abstract_sentences, keywords) is False:
+            elif self.determine_claim_position(abstract_sentences, keywords1) is False:
                 item['total_position'] = 'No'
-            elif self.determine_claim_position(abstract_sentences, keywords) == 'Not enough noun phrases':
+            elif self.determine_claim_position(abstract_sentences, keywords1) == 'Not enough noun phrases':
                 item['total_position'] = 'Not enough noun phrases'
             else:
                 item['total_position'] = 'No position'
@@ -642,7 +642,7 @@ class CallJournalUrls:
 class Answer:
 
     @celery.task(name='answer_question')
-    def answer_question(self, articles, keywords=None):
+    def answer_question(self, articles, keywords1=None):
         """Perform claim detection on abstracts."""
         # articles is a list of lists that has to be flattened
         combined_articles = [
@@ -674,7 +674,7 @@ class Answer:
 
         else:
             # filter out the irrelevant articles
-            relevant_articles = CallJournalUrls.filter_articles(combined_articles, keywords)
+            relevant_articles = CallJournalUrls.filter_articles(combined_articles, keywords1)
             response['Relevant_articles'] = len(relevant_articles)
 
             if not relevant_articles:
@@ -697,7 +697,7 @@ class Answer:
                 response['Claim_positions'] = claim_positions
                 # perform claim detection
                 relevant_articles_positions = CallJournalUrls.assign_position(
-                    relevant_articles, keywords)
+                    relevant_articles, keywords1)
                 # get summary of claim positions
                 claim_positions = CallJournalUrls.get_article_positions(
                     relevant_articles_positions)
@@ -706,7 +706,7 @@ class Answer:
             else:
                 # perform claim detection
                 relevant_articles_positions = CallJournalUrls.assign_position(
-                    relevant_articles, keywords)
+                    relevant_articles, keywords1)
                 # get summary of claim positions
                 claim_positions = CallJournalUrls.get_article_positions(
                     relevant_articles_positions)
@@ -721,15 +721,15 @@ if __name__ == '__main__':
     question = input("Please enter your question: ")
     print(question)
     print()
-    keywords = CallJournalUrls.process_question(question)
+    keywords1 = CallJournalUrls.process_question(question)
 
     # use a celery chord here and add keywords as an extra argument in
     # addition to the header
-    callback = Answer.answer_question.subtask(kwargs={'keywords': keywords})
+    callback = Answer.answer_question.subtask(kwargs={'keywords': keywords1})
     header = [
-        CallJournalUrls.get_doaj_articles.subtask(args=(keywords, )),
-        CallJournalUrls.get_Crossref_articles.subtask(args=(keywords, )),
-        CallJournalUrls.get_CORE_articles.subtask(args=(keywords, ))
+        CallJournalUrls.get_doaj_articles.subtask(args=(keywords1,)),
+        CallJournalUrls.get_Crossref_articles.subtask(args=(keywords1,)),
+        CallJournalUrls.get_CORE_articles.subtask(args=(keywords1,))
     ]
     result = chord(header)(callback)
     print(result.get())
