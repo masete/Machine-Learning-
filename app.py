@@ -3,7 +3,7 @@ import os
 from flask import Flask, render_template, request, jsonify, url_for
 from flask_bootstrap import Bootstrap
 from gevent.pywsgi import WSGIServer
-from answer_policy_question import CallJournalUrls, Answer
+from dar.answer_policy_question import CallJournalUrls, Answer
 
 import wikipedia
 
