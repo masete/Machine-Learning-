@@ -4,8 +4,8 @@ Main app root of the api endpoints
 """
 
 from flask import Flask
-
-from dar.config.config import HostConfig, ServerConfig, EnvironmentConfig
+from dar.config.config import HostConfig, ServerConfig, EnvironmentConfig, CeleryConfig
+# from dar.config.config import HostConfig, ServerConfig, EnvironmentConfig
 from dar.routes import Urls
 
 

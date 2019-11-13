@@ -4,7 +4,7 @@ import wikipedia
 
 
 class ResultController(MethodView):
-    def resultanswer(self):
+    def post(self):
         """Return an answer to the user."""
         question = request.json['replies']['question']
         answer = request.json['results']

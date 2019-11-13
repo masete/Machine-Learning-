@@ -31,7 +31,6 @@ class EnvironmentConfig(ServerConfig):
     DEBUG = os.getenv('DEBUG', False)
     TESTING = os.getenv('TESTING', False)
     ENV = os.getenv('ENV', 'production')
-
     BOOTSTRAP_CDN_FORCE_SSL = True
     PREFERRED_URL_SCHEME = 'https'
 
