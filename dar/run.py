@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-"""
-Main app root of the api endpoints
-"""
+from wsgiref.simple_server import WSGIServer
 
 from flask import Flask
+from flask_bootstrap import Bootstrap
+
 from dar.config.config import HostConfig, ServerConfig, EnvironmentConfig, CeleryConfig
-# from dar.config.config import HostConfig, ServerConfig, EnvironmentConfig
 from dar.routes import Urls
 
 
@@ -23,5 +21,12 @@ class Server:
 
 APP = Server().create_app(config=ServerConfig, env=EnvironmentConfig)
 
+Bootstrap(APP)
+
 if __name__ == '__main__':
-    APP.run(host=HostConfig.HOST, port=HostConfig.PORT)
+    http_server = WSGIServer((HostConfig.HOST, HostConfig.PORT), APP)
+    http_server.serve_forever()
+
+# run the application using the command
+# FLASK_DEBUG=1 FLASK_APP=dar.run:APP flask run
+# the FLASK_DEBUG env enables auto reload and logging of debug messages, use only in development
