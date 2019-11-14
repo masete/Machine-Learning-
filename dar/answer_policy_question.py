@@ -8,7 +8,7 @@ Copyright (c) 2019 Pollicy.
 
 import en_core_web_sm
 import textacy.extract
-# import spacy
+import spacy
 from celery.backends.redis import RedisBackend
 from celery import chord, states
 import celery
@@ -20,7 +20,7 @@ from nltk.tokenize import sent_tokenize
 import requests
 import json
 import string
-# import itertools
+import itertools
 
 import nltk
 nltk.download('stopwords')

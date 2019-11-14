@@ -1,4 +1,7 @@
 ../__init__.py
 /__pycache__/
-
+__init__.pyc
+run.pyc
+config/__init__.pyc
+config/config.pyc
 .env

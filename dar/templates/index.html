@@ -151,7 +151,7 @@
               replies['question'] = 'Does ' + replies['policy'] + ' ' + replies['direction'] + ' ' + replies['phenomenon'] + '?'
               console.log(replies)
               // start the asynchronous task
-              var url = "{{ url_for('question_answer') }}";
+              var url = "{{ url_for('/question/answer/') }}";
               var data = replies
 
               $.ajax({
