@@ -1,10 +1,10 @@
 """
 Urls class , to handel request urls,
 """
-from dar.views.result_view import ResultController
-from dar.views.status_view import StatusController
-from dar.views.question_view import QuestionAnswerController
-from dar.views.index_view import IndexController
+from views.result_view import ResultController
+from views.status_view import StatusController
+from views.question_view import QuestionAnswerController
+from views.index_view import IndexController
 
 
 class Urls:

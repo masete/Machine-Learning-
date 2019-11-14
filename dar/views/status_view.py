@@ -1,7 +1,7 @@
 from flask import jsonify
 from flask.views import MethodView
 
-from dar.answer_policy_question import Answer
+from answer_policy_question import Answer
 
 
 class StatusController(MethodView):

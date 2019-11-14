@@ -2,7 +2,7 @@ from celery import chord
 from flask import request, jsonify, url_for
 from flask.views import MethodView
 
-from dar.answer_policy_question import CallJournalUrls, Answer
+from answer_policy_question import CallJournalUrls, Answer
 
 
 class QuestionAnswerController(MethodView):
@@ -26,4 +26,4 @@ class QuestionAnswerController(MethodView):
         return jsonify(
             {}), 202, {
                    'Location': url_for(
-                       'taskstatus', task_id=task.id, _external=True, _scheme='https')}
+                       'taskstatus', task_id=task.id, _external=True, _scheme='http')}

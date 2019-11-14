@@ -3,8 +3,8 @@ from wsgiref.simple_server import WSGIServer
 from flask import Flask
 from flask_bootstrap import Bootstrap
 
-from dar.config.config import HostConfig, ServerConfig, EnvironmentConfig, CeleryConfig
-from dar.routes import Urls
+from config.config import HostConfig, ServerConfig, EnvironmentConfig
+from routes import Urls
 
 
 class Server:

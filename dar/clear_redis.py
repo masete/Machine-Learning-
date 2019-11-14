@@ -2,7 +2,7 @@
 # not run out of memory since the Heroku redis add-on only gives a few MB
 
 import redis
-from dar.config.config import CeleryConfig
+from config.config import CeleryConfig
 
 redis_url = CeleryConfig.broker_url
 r = redis.from_url(redis_url)

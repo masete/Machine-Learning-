@@ -12,7 +12,7 @@ import spacy
 from celery.backends.redis import RedisBackend
 from celery import chord, states
 import celery
-from dar.config.config import CeleryConfig
+from config.config import CeleryConfig
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize
 # import os
