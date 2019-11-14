@@ -20,7 +20,7 @@ from nltk.tokenize import sent_tokenize
 import requests
 import json
 import string
-import itertools
+# import itertools
 
 import nltk
 nltk.download('stopwords')
@@ -87,7 +87,7 @@ class LoadSpayModelSetUpPipeline:
     opinion_words = neg_words + pos_words
 
 
-class CallJournalUrls:
+class CallJournalUrls(LoadSpayModelSetUpPipeline):
 
     # base urls for the APIs used to fetch open access research articles
     base_url_DOAJ = "https://doaj.org/api/v1/search/articles/"
@@ -639,7 +639,7 @@ class CallJournalUrls:
         return claim_positions
 
 
-class Answer:
+class Answer(CallJournalUrls):
 
     @celery.task(name='answer_question')
     def answer_question(self, articles, keywords1=None):
