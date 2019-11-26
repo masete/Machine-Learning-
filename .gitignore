@@ -1,0 +1,10 @@
+/__pycache__/
+venv
+../.env
+.DS_Store
+.vscode
+dump.rdb
+/.idea/
+/myenv
+myenv/
+/../.idea/
